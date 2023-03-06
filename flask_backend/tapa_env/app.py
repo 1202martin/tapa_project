@@ -12,7 +12,7 @@ tapa_cursor = db_conn.cursor()
 # Function to execute DB query e/ time an action from DB is necessary.
 
 app = Flask(__name__)
-
+ 
 @app.route('/')
 def index():
     return "Getting started"
@@ -31,5 +31,20 @@ def register(username=None,password=None):
         db_conn.commit()
         return "successfully registered a new user"
 
+@app.route('/updatePassword/<int:user_id>/<string:new_password>')
+def update_password(user_id,new_password):
+    get_curr_password_query = f"SELECT password FROM user WHERE user_id={user_id}"
+    tapa_cursor.execute(get_curr_password_query)
+    curr_password = tapa_cursor.fetchall()[0][0]
+    
+    if new_password != curr_password:
+        update_password_query = f"UPDATE user SET password=\"{new_password}\" WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(update_password_query)
+        db_conn.commit()
+        return "Successfully updated to new password"
+    else:
+        return "You are already using this password; choose a different one."
+
+    return "updating password"
 if __name__=="__main__":
     app.run(debug=True)
