@@ -9,7 +9,19 @@ db_conn = pymysql.connect(
                 charset = "utf8"
 )
 tapa_cursor = db_conn.cursor()
-# Function to execute DB query e/ time an action from DB is necessary.
+
+def authenticate_user_account(username, password):
+    get_authentication_info_query = f"SELECT user_id,password FROM user WHERE username=\"{username}\""
+    tapa_cursor.execute(get_authentication_info_query)
+    auth_info = tapa_cursor.fetchall()
+    if len(auth_info) == 0:
+        return -2
+    user_id = auth_info[0][0]
+    correct_password = auth_info[0][1]
+    if password == correct_password:
+        return int(user_id)
+    else:
+        return -1
 
 app = Flask(__name__)
  
@@ -17,8 +29,8 @@ app = Flask(__name__)
 def index():
     return "Getting started"
 
-@app.route('/register/<string:username>/<string:password>')
-def register(username=None,password=None): 
+@app.route('/registerAccount/<string:username>/<string:password>')
+def register_account(username=None,password=None): 
     # Check if username from request form is already in db
     select_username_query = f"SELECT username FROM user"
     tapa_cursor.execute(select_username_query)
@@ -30,21 +42,60 @@ def register(username=None,password=None):
         tapa_cursor.execute(insert_new_user_query)
         db_conn.commit()
         return "successfully registered a new user"
-
-@app.route('/updatePassword/<int:user_id>/<string:new_password>')
-def update_password(user_id,new_password):
-    get_curr_password_query = f"SELECT password FROM user WHERE user_id={user_id}"
-    tapa_cursor.execute(get_curr_password_query)
-    curr_password = tapa_cursor.fetchall()[0][0]
     
-    if new_password != curr_password:
-        update_password_query = f"UPDATE user SET password=\"{new_password}\" WHERE user_id=\"{user_id}\""
-        tapa_cursor.execute(update_password_query)
-        db_conn.commit()
-        return "Successfully updated to new password"
-    else:
-        return "You are already using this password; choose a different one."
+@app.route('/updateUsername/<string:username>/<string:password>/<string:new_username>')
+def update_username(username,password,new_username):
+    user_id = authenticate_user_account(username,password)
+    if user_id >= 0:
+        get_curr_username_querry = f"SELECT username FROM user WHERE user_id={user_id}"
+        tapa_cursor.execute(get_curr_username_querry)
+        curr_username = tapa_cursor.fetchall()[0][0]
 
-    return "updating password"
+        if new_username != curr_username:
+            update_username_query = f"UPDATE user SET username=\"{new_username}\" WHERE user_id=\"{user_id}\""
+            tapa_cursor.execute(update_username_query)
+            db_conn.commit()
+            return "Successfully updated to new username"
+        else:
+            return "You are already using this username."
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
+
+@app.route('/updatePassword/<string:username>/<string:password>/<string:new_password>')
+def update_password(username,password,new_password):
+    user_id = authenticate_user_account(username,password)
+    if user_id >= 0:
+        get_curr_password_query = f"SELECT password FROM user WHERE user_id={user_id}"
+        tapa_cursor.execute(get_curr_password_query)
+        curr_password = tapa_cursor.fetchall()[0][0]
+        
+        if new_password != curr_password:
+            update_password_query = f"UPDATE user SET password=\"{new_password}\" WHERE user_id=\"{user_id}\""
+            tapa_cursor.execute(update_password_query)
+            db_conn.commit()
+            return "Successfully updated to new password"
+        else:
+            return "You are already using this password; choose a different one."
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
+    
+@app.route('/removeAccount/<string:username>/<string:password>')
+def remove_account(username,password):
+    user_id = authenticate_user_account(username,password)
+    if user_id >= 0:
+        delete_account_query = f"DELETE FROM user WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(delete_account_query)
+        db_conn.commit()
+        return "User account has been removed."
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
+
+ 
 if __name__=="__main__":
     app.run(debug=True)
