@@ -97,5 +97,41 @@ def remove_account(username,password):
         return "No account with such username exists"
 
  
+@app.route('/addPostKey/<string:username>/<string:password>/<string:post_key>')
+def add_post_key(username,password,post_key):
+    user_id = authenticate_user_account(username,password)
+    get_users_postkeys_query = f"SELECT post_key FROM user_post_key WHERE user_id=\"{user_id}\""
+    tapa_cursor.execute(get_users_postkeys_query)
+    get_post_key_repl = tapa_cursor.fetchall()
+    post_keys = []
+    for repl in get_post_key_repl:
+        post_keys.append(repl[0])
+    
+    if post_key not in post_keys:
+        add_post_key_query = f"INSERT INTO user_post_key(user_id,post_key) VALUES({user_id},\"{post_key}\")"
+        print("add post key query : ", add_post_key_query)
+        tapa_cursor.execute(add_post_key_query)
+        db_conn.commit()
+        return f"Successfully added post key associated with user {user_id}"
+    else:
+        return "This post key already exists. Try create a different post key."
+    
+@app.route('/deletePostKey/<string:username>/<string:password>/<string:post_key>')
+def delete_post_key(username,password,post_key):
+    user_id = authenticate_user_account(username,password)
+    get_users_postkeys_query = f"SELECT post_key FROM user_post_key WHERE user_id=\"{user_id}\""
+    tapa_cursor.execute(get_users_postkeys_query)
+    get_post_key_repl = tapa_cursor.fetchall()
+    post_keys = []
+    for repl in get_post_key_repl:
+        post_keys.append(repl[0])
+    
+    if post_key in post_keys:
+        delete_post_key_query = f"DELETE FROM user_post_key WHERE post_key=\"{post_key}\""
+        tapa_cursor.execute(delete_post_key_query)
+        db_conn.commit()
+        return "Successfully removed post key"
+    else:
+        return "This post key does not exist."
 if __name__=="__main__":
     app.run(debug=True)
