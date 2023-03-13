@@ -29,8 +29,8 @@ app = Flask(__name__)
 def index():
     return "Getting started"
 
-@app.route('/registerAccount/<string:username>/<string:password>')
-def register_account(username=None,password=None): 
+@app.route('/createAccount/<string:username>/<string:password>')
+def create_account(username=None,password=None): 
     # Check if username from request form is already in db
     select_username_query = f"SELECT username FROM user"
     tapa_cursor.execute(select_username_query)
@@ -42,6 +42,20 @@ def register_account(username=None,password=None):
         tapa_cursor.execute(insert_new_user_query)
         db_conn.commit()
         return "successfully registered a new user"
+    
+@app.route('/removeAccount/<string:username>/<string:password>')
+def remove_account(username,password):
+    user_id = authenticate_user_account(username,password)
+    if user_id >= 0:
+        delete_account_query = f"DELETE FROM user WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(delete_account_query)
+        db_conn.commit()
+        return "User account has been removed."
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
+
     
 @app.route('/updateUsername/<string:username>/<string:password>/<string:new_username>')
 def update_username(username,password,new_username):
@@ -83,22 +97,9 @@ def update_password(username,password,new_password):
     elif user_id == -2:
         return "No account with such username exists"
     
-@app.route('/removeAccount/<string:username>/<string:password>')
-def remove_account(username,password):
-    user_id = authenticate_user_account(username,password)
-    if user_id >= 0:
-        delete_account_query = f"DELETE FROM user WHERE user_id=\"{user_id}\""
-        tapa_cursor.execute(delete_account_query)
-        db_conn.commit()
-        return "User account has been removed."
-    elif user_id == -1:
-        return "User authentication failed"
-    elif user_id == -2:
-        return "No account with such username exists"
-
  
-@app.route('/addPostKey/<string:username>/<string:password>/<string:post_key>')
-def add_post_key(username,password,post_key):
+@app.route('/createPostKey/<string:username>/<string:password>/<string:post_key>')
+def create_post_key(username,password,post_key):
     user_id = authenticate_user_account(username,password)
     get_users_postkeys_query = f"SELECT post_key FROM user_post_key WHERE user_id=\"{user_id}\""
     tapa_cursor.execute(get_users_postkeys_query)
@@ -167,5 +168,25 @@ def create_portfolio(username,password,portfolio_name,introduction,phone,email):
     elif user_id == -2:
         return "No account with such username exists"
     
+@app.route('/deletePortfolio/<string:username>/<string:password>/<string:portfolio_name>')
+def delete_portfolio(username,password,portfolio_name):
+    user_id = authenticate_user_account(username,password)
+    get_existing_portfolio_query = f"SELECT portfolio_link FROM portfolio"
+    tapa_cursor.execute(get_existing_portfolio_query)
+    existing_portfolio_names = [row[0] for row in tapa_cursor.fetchall()]
+    
+    if user_id >=0:
+        if portfolio_name in existing_portfolio_names:
+            delete_portfolio_query = f"DELETE FROM portfolio WHERE portfolio_link=\"{portfolio_name}\""
+            tapa_cursor.execute(delete_portfolio_query)
+            db_conn.commit()
+
+            return f"Successfully deleted potfolio link {portfolio_name}"
+        else:
+            return f"This portfolio does not exist"
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
 if __name__=="__main__":
     app.run(debug=True)
