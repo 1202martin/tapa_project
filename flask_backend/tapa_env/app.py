@@ -29,6 +29,7 @@ app = Flask(__name__)
 def index():
     return "Getting started"
 
+# Account related functions
 @app.route('/createAccount/<string:username>/<string:password>')
 def create_account(username=None,password=None): 
     # Check if username from request form is already in db
@@ -188,5 +189,38 @@ def delete_portfolio(username,password,portfolio_name):
         return "User authentication failed"
     elif user_id == -2:
         return "No account with such username exists"
+
+# User activity functions
+@app.route('/addComment/<string:username>/<string:password>/<string:post_id>/<string:comment>')
+def add_comment(username,password,post_id,comment):
+    user_id = authenticate_user_account(username,password)
+
+    if user_id>=0:
+        add_comment_query = f"INSERT INTO comment(user_id,post_id,content) VALUES(\"{user_id}\",\"{post_id}\",\"{comment}\")"
+        tapa_cursor.execute(add_comment_query)
+        db_conn.commit()
+        return f"Successfully added comment to post {post_id}"
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
+    
+@app.route('/removeComment/<string:username>/<string:password>/<int:comment_id>')
+def remove_comment(username,password,comment_id):
+    user_id = authenticate_user_account(username,password)
+    get_comment_ids_query = f"SELECT comment_id FROM comment"
+    tapa_cursor.execute(get_comment_ids_query)
+    comment_id_list = [row[0] for row in tapa_cursor.fetchall()]
+    print("comment ids : ", comment_id_list)
+
+@app.route('/addPost/')
+def add_post():
+    return "Adding post"
+
+@app.route('/removePost/')
+def remove_post():
+    return "Removing post"
+
+    
 if __name__=="__main__":
     app.run(debug=True)
