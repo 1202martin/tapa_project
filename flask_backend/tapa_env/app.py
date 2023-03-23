@@ -208,14 +208,46 @@ def add_comment(username,password,post_id,comment):
 @app.route('/removeComment/<string:username>/<string:password>/<int:comment_id>')
 def remove_comment(username,password,comment_id):
     user_id = authenticate_user_account(username,password)
-    get_comment_ids_query = f"SELECT comment_id FROM comment"
+    get_comment_ids_query = f"SELECT comment_id FROM comment WHERE user_id=\"{user_id}\""
     tapa_cursor.execute(get_comment_ids_query)
     comment_id_list = [row[0] for row in tapa_cursor.fetchall()]
-    print("comment ids : ", comment_id_list)
+    if comment_id in comment_id_list:
+        remove_comment_query = f"DELETE FROM comment WHERE comment_id={comment_id}"
+        tapa_cursor.execute(remove_comment_query)
+        db_conn.commit()
+        return f"Comment has been removed successfully"
+    else:
+        return f"This comment does not exist or is not owned by the user {user_id}"
 
-@app.route('/addPost/')
-def add_post():
-    return "Adding post"
+@app.route('/addPost/<string:username>/<string:password>/<string:post_id>/<string:image_directory>/<string:image_desc>/<string:post_location>')
+def add_post(username,password,post_id,image_directory,image_desc,post_location):                                                                                                   #post_id will have to be generated using a sort of hash to create a unique string id to be used for digital signature
+    user_id = authenticate_user_account(username,password)
+    if user_id >= 0:
+        check_existing_postid_query = f"SELECT post_id FROM post"
+        tapa_cursor.execute(check_existing_postid_query)
+        existing_postids = [row[0] for row in tapa_cursor.fetchall()]
+
+        check_existing_imgdir_query = f"SELECT img_dir FROM post"
+        tapa_cursor.execute(check_existing_imgdir_query)
+        existing_imgdirs = [row[0] for row in tapa_cursor.fetchall()]
+
+        if post_id in existing_postids:
+            return "This post id already exists; make the system create a different post id"
+        elif image_directory in existing_imgdirs:
+            return "This image directory is already being used. Choose a different filename for the image."
+        else:
+            add_post_query = f"INSERT INTO post(post_id,img_dir,img_desc,post_loc) VALUES(\"{post_id}\",\"{image_directory}\",\"{image_desc}\",\"{post_location}\")"
+            tapa_cursor.execute(add_post_query)
+            db_conn.commit()
+            user_to_post_query = f"INSERT INTO user_to_post(user_id,post_id) VALUES(\"{user_id}\",\"{post_id}\")"
+            tapa_cursor.execute(user_to_post_query)
+            db_conn.commit()
+            return "Successfully added post"
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
+    
 
 @app.route('/removePost/')
 def remove_post():
