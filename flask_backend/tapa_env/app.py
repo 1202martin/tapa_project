@@ -208,16 +208,21 @@ def add_comment(username,password,post_id,comment):
 @app.route('/removeComment/<string:username>/<string:password>/<int:comment_id>')
 def remove_comment(username,password,comment_id):
     user_id = authenticate_user_account(username,password)
-    get_comment_ids_query = f"SELECT comment_id FROM comment WHERE user_id=\"{user_id}\""
-    tapa_cursor.execute(get_comment_ids_query)
-    comment_id_list = [row[0] for row in tapa_cursor.fetchall()]
-    if comment_id in comment_id_list:
-        remove_comment_query = f"DELETE FROM comment WHERE comment_id={comment_id}"
-        tapa_cursor.execute(remove_comment_query)
-        db_conn.commit()
-        return f"Comment has been removed successfully"
-    else:
-        return f"This comment does not exist or is not owned by the user {user_id}"
+    if user_id >= 0:
+        get_comment_ids_query = f"SELECT comment_id FROM comment WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(get_comment_ids_query)
+        comment_id_list = [row[0] for row in tapa_cursor.fetchall()]
+        if comment_id in comment_id_list:
+            remove_comment_query = f"DELETE FROM comment WHERE comment_id={comment_id}"
+            tapa_cursor.execute(remove_comment_query)
+            db_conn.commit()
+            return f"Comment has been removed successfully"
+        else:
+            return f"This comment does not exist or is not owned by the user {user_id}"
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
 
 @app.route('/addPost/<string:username>/<string:password>/<string:post_id>/<string:image_directory>/<string:image_desc>/<string:post_location>')
 def add_post(username,password,post_id,image_directory,image_desc,post_location):                                                                                                   #post_id will have to be generated using a sort of hash to create a unique string id to be used for digital signature
@@ -249,10 +254,28 @@ def add_post(username,password,post_id,image_directory,image_desc,post_location)
         return "No account with such username exists"
     
 
-@app.route('/removePost/')
-def remove_post():
-    return "Removing post"
+@app.route('/removePost/<string:username>/<string:password>/<string:post_id>')
+def remove_post(username, password, post_id):
+    user_id = authenticate_user_account(username,password)
+    if user_id >=0:
+        check_post_query = f"SELECT post_id FROM user_to_post WHERE user_id={user_id}"
+        tapa_cursor.execute(check_post_query)
+        existing_posts_by_user = [row[0] for row in tapa_cursor.fetchall()]
+        if post_id in existing_posts_by_user:
+            remove_user_to_post_query = f"DELETE FROM user_to_post WHERE user_id = {user_id} and post_id = \"{post_id}\""
+            tapa_cursor.execute(remove_user_to_post_query)
+            db_conn.commit()
+            remove_post_query = f"DELETE FROM post WHERE post_id = \"{post_id}\""
+            tapa_cursor.execute(remove_post_query)
+            db_conn.commit()
+            return "Successfully removed post"
+        else:
+            return "This user does not have the specified post"
 
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
     
 if __name__=="__main__":
     app.run(debug=True)
