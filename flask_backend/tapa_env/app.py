@@ -277,5 +277,72 @@ def remove_post(username, password, post_id):
     elif user_id == -2:
         return "No account with such username exists"
     
+@app.route('/addPostToPortfolio/<string:username>/<string:password>/<string:portfolio_link>/<string:post_id>')
+def add_post_to_portfolio(username, password, portfolio_link, post_id):
+    user_id = authenticate_user_account(username,password)
+    if user_id >=0:
+        check_existing_posts_query = f"SELECT post_id FROM user_to_post WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(check_existing_posts_query)
+        existing_posts_by_user = [row[0] for row in tapa_cursor.fetchall()]
+
+        check_existing_portfolios_query = f"SELECT portfolio_link FROM user_to_portfolio WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(check_existing_portfolios_query)
+        existing_portfolios_by_user = [row[0] for row in tapa_cursor.fetchall()]
+
+        check_existing_ortfolio_post_query = f"SELECT post_id FROM portfolio_to_post WHERE portfolio_link=\"{portfolio_link}\""
+        tapa_cursor.execute(check_existing_ortfolio_post_query)
+        existing_portfolio_posts = [row[0] for row in tapa_cursor.fetchall()]
+
+        if post_id not in existing_posts_by_user:
+            return "this post id does not exist"
+        elif portfolio_link not in existing_portfolios_by_user:
+            return "this portfolio does not exist"
+        else:
+            if post_id not in existing_portfolio_posts:
+                add_post_to_portfolio_query = f"INSERT INTO portfolio_to_post(portfolio_link,post_id) VALUES(\"{portfolio_link}\",\"{post_id}\")"
+                tapa_cursor.execute(add_post_to_portfolio_query)
+                db_conn.commit()
+                return "Successfully added post"
+            else:
+                return "This post id already exists in the porfolio"
+
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
+    
+
+@app.route("/removePostFromPortfolio/<string:username>/<string:password>/<string:portfolio_link>/<string:post_id>")
+def remove_post_from_portfolio(username,password,portfolio_link,post_id):
+    user_id = authenticate_user_account(username,password)
+    if user_id >=0:
+        check_existing_posts_query = f"SELECT post_id FROM user_to_post WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(check_existing_posts_query)
+        existing_posts_by_user = [row[0] for row in tapa_cursor.fetchall()]
+
+        check_existing_portfolios_query = f"SELECT portfolio_link FROM user_to_portfolio WHERE user_id=\"{user_id}\""
+        tapa_cursor.execute(check_existing_portfolios_query)
+        existing_portfolios_by_user = [row[0] for row in tapa_cursor.fetchall()]
+        
+        check_existing_ortfolio_post_query = f"SELECT post_id FROM portfolio_to_post WHERE portfolio_link=\"{portfolio_link}\""
+        tapa_cursor.execute(check_existing_ortfolio_post_query)
+        existing_portfolio_posts = [row[0] for row in tapa_cursor.fetchall()]
+
+        if post_id not in existing_posts_by_user:
+            return "this post id does not exist"
+        elif portfolio_link not in existing_portfolios_by_user:
+            return "this portfolio does not exist"
+        elif post_id not in existing_portfolio_posts:
+            return "this post does not exist in the given portfolio"
+        else:
+            remove_portfolio_post_query = f"DELETE FROM portfolio_to_post WHERE post_id=\"{post_id}\""
+            tapa_cursor.execute(remove_portfolio_post_query)
+            db_conn.commit()
+            return "Successfully remvoed post from portfolio"
+
+    elif user_id == -1:
+        return "User authentication failed"
+    elif user_id == -2:
+        return "No account with such username exists"
 if __name__=="__main__":
     app.run(debug=True)
