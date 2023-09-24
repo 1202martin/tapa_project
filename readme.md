@@ -1,6 +1,6 @@
 Tapa Project
 
-	Tapa Project is a platform under which participants can express, discuss, and collaborate to 
+Tapa Project is a platform under which participants can express, discuss, and collaborate to 
 create various art works with having to worry less about their intellectual property being pirated. 
 Participants of this project will be considered "artists", since they will be making posts about 
 scribbles, paintings, or any other forms of creativity they feel like sharing with the public. The posts 
