@@ -1,0 +1,7 @@
+1. start mysql server
+    - mysql.server start
+    * if the command shows an error and the error log shows that port 3306 is already in use, check if the xampp is running the db in its service (my macbook has one running and they interrupt with each other)
+
+2. start backend code
+    - python app.py
+    
